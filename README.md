@@ -21,13 +21,13 @@ git clone https://github.com/la9una/mars_habitability.git
 2. **Make the Script Executable**:
 
  ```bash
- chmod +x meda_data_fetcher.sh
+ cd mars_habitability && chmod +x perseverance_meda_data_fetcher.sh
  ```
 
 3. **Run the Script**:
 
 ```bash
-./meda_data_fetcher.sh
+./perseverance_meda_data_fetcher.sh
 ```
 
 4. **Follow the Prompts**:
