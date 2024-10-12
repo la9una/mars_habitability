@@ -69,12 +69,40 @@ fetch_files() {
     done
 }
 
-# Function to filter files based on multiple sensor types
+# Function to parse and expand sol ranges
+parse_sols() {
+    local sol_input=("$@")
+    local sols=()
+
+    for item in "${sol_input[@]}"; do
+        if [[ "$item" =~ ^[0-9]+$ ]]; then
+            sols+=("$item")
+        elif [[ "$item" =~ ^([0-9]+)-([0-9]+)$ ]]; then
+            start=${BASH_REMATCH[1]}
+            end=${BASH_REMATCH[2]}
+            for ((i = start; i <= end; i++)); do
+                sols+=("$i")
+            done
+        else
+            echo -e "\033[1;31mInvalid sol input: $item. Exiting.\033[0m"
+            exit 1
+        fi
+    done
+
+    echo "${sols[@]}"
+}
+
+# Function to filter files based on sensor types and sol numbers
 filter_files() {
-    local sensors=("$@")
+    local sensors=("${selected_sensors[@]}")
+    local sols=("${selected_sols[@]}")
+
     > "filtered_file_list.txt" # Clear the file before filtering
     for sensor_type in "${sensors[@]}"; do
-        grep -E "/WE__[0-9]{4}___________${selected_data_type}_${sensor_type}_" "$FILE_LIST" >> "filtered_file_list.txt"
+        for sol in "${sols[@]}"; do
+            sol_formatted=$(printf "%04d" "$sol") # Format sol as 4 digits
+            grep -E "/WE__${sol_formatted}___________${selected_data_type}_${sensor_type}_" "$FILE_LIST" >> "filtered_file_list.txt"
+        done
     done
     sort -u "filtered_file_list.txt" -o "filtered_file_list.txt" # Remove duplicates if any
 }
@@ -103,7 +131,7 @@ download_files() {
             echo -e "\033[1;33mSkipping $filename (already exists)...\033[0m"
         else
             # Download the file with progress
-            wget --show-progress -q "$file_url" -O "$filepath"
+            wget --show-progress "$file_url" -O "$filepath"
         fi
     done < "filtered_file_list.txt"
 }
@@ -141,7 +169,6 @@ if [[ -e "$FILE_LIST" && -s "$FILE_LIST" ]]; then
         echo -e "\033[1;33mSkipping indexing step.\033[0m"
     else
         > "$FILE_LIST" # Clear the file if user wants to re-index
-        # Proceed to indexing
         print_message "Indexing $selected_data_type data. This may take a while..."
         progress_indicator "Fetching files" &
         PROGRESS_PID=$!
@@ -154,7 +181,6 @@ if [[ -e "$FILE_LIST" && -s "$FILE_LIST" ]]; then
         echo " [COMPLETED]"
     fi
 else
-    # If the file doesn't exist or is empty, proceed to indexing
     print_message "Indexing $selected_data_type data. This may take a while..."
     progress_indicator "Fetching files" &
     PROGRESS_PID=$!
@@ -197,13 +223,20 @@ for index in "${sensor_type_indices[@]}"; do
     fi
 done
 
+# Prompt user for sol numbers or ranges
+print_message "Enter the sol numbers or ranges (e.g., 2, 10-12, 15):"
+read -p "Enter sol numbers/ranges: " -a sol_input
+
+# Parse sol numbers/ranges
+selected_sols=($(parse_sols "${sol_input[@]}"))
+
 # Apply the filtering based on user selection
-print_message "Filtering files for sensors: ${selected_sensors[*]}"
-filter_files "${selected_sensors[@]}"
+print_message "Filtering files for sensors: ${selected_sensors[*]} and sols: ${selected_sols[*]}"
+filter_files "${selected_sensors[@]}" "${selected_sols[@]}"
 
 # Check if any files matched the criteria
 if [ ! -s "filtered_file_list.txt" ]; then
-    print_message "No files matched the selected sensor criteria."
+    print_message "No files matched the selected sensor and sol criteria."
     exit 0
 else
     print_message "Files matching the criteria have been listed in filtered_file_list.txt."
