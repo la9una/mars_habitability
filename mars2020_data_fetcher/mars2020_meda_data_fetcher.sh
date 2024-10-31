@@ -203,8 +203,9 @@ fi
 
 # Prompt user for sensor types (multiple selection allowed)
 print_message "Select the type(s) of sensor (separated by space):"
-sensor_types=("WS (Wind Sensor)" "ATS (Air Temperature Sensor)" "TIRS (Thermal Infra-Red Sensor)" "HS (Relative Humidity Sensor)" "RDS (Radiation and Dust Sensor)" "PS (Pressure Sensor)")
-sensor_type_codes=("WS" "ATS" "TIRS" "HS" "RDS" "PS")
+sensor_types=("WS (Wind Sensor)" "ATS (Air Temperature Sensor)" "TIRS (Thermal Infra-Red Sensor)" "HS (Relative Humidity Sensor)" "RDS (Radiation and Dust Sensor)" "PS (Pressure Sensor)" "RHS (Relative Humidity Sensor)")
+sensor_type_codes=("WS" "ATS" "TIRS" "HS" "RDS" "PS" "RHS")
+
 
 for i in "${!sensor_types[@]}"; do
     echo "$((i + 1)). ${sensor_types[$i]}"
